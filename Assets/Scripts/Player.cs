@@ -8,24 +8,30 @@ public class Player : MonoBehaviour
 
     public Rigidbody2D rb;
 
+    public ParticleSystem leftBoost, rightBoost, upBoost, downBoost;
+
     private void Update()
     {
         // Check for individual arrow key presses on the frame they are pressed down
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             ApplyPush(Vector2.up);
+            upBoost.Play();
         }
         else if (Input.GetKeyDown(KeyCode.DownArrow))
         {
             ApplyPush(Vector2.down);
+            downBoost.Play();
         }
         else if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
             ApplyPush(Vector2.left);
+            leftBoost.Play();
         }
         else if (Input.GetKeyDown(KeyCode.RightArrow))
         {
-            ApplyPush(Vector2.right);
+            ApplyPush(Vector2.right);   
+            rightBoost.Play();
         }
     }
 
