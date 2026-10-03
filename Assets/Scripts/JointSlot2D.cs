@@ -24,6 +24,9 @@ public class JointSlot2D : MonoBehaviour
     [Tooltip("Distance threshold to trigger the auto-attachment.")]
     [SerializeField] private float attachThreshold = 0.15f;
 
+    [Header("Visual Effects")]
+    [SerializeField] private JointParticleBeam particleBeam;
+
     private PlayerJointManager jointManager;
 
     public JointType JointType => jointType;
@@ -37,8 +40,12 @@ public class JointSlot2D : MonoBehaviour
 
     private void FixedUpdate()
     {
-        // Only active base slots on the player should pull external objects
-        if (!isMagnetActive || isOccupied || jointManager == null) return;
+        // Only active, unoccupied slots connected to the player chain perform magnet pulling
+        if (!isMagnetActive || isOccupied | jointManager == null)
+        {
+            if (particleBeam != null) particleBeam.ClearBeam();
+            return;
+        }
 
         CheckAndPullNearbySlots();
     }
@@ -69,6 +76,8 @@ public class JointSlot2D : MonoBehaviour
             Vector2 targetJointPos = nearbySlot.transform.position;
             Vector2 pullDirection = slotPosition - targetJointPos;
             float distance = pullDirection.magnitude;
+
+            particleBeam.RenderBeam(transform.position, targetJointPos);
 
             if (distance <= attachThreshold)
             {
