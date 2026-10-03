@@ -85,6 +85,8 @@ public class Part : MonoBehaviour, IDestructible
         currentHealth -= damageAmount;
         Debug.Log($"Part '{gameObject.name}' took {damageAmount} damage. Health remaining: {currentHealth}", gameObject);
 
+        CameraFollow.Shake();
+
         if (currentHealth <= 0f)
         {
             Die();
@@ -94,6 +96,7 @@ public class Part : MonoBehaviour, IDestructible
     private void Die()
     {
         Debug.Log($"Part '{gameObject.name}' destroyed!", gameObject);
+        CameraFollow.Shake(0.25f, 0.6f);
         Destroy(gameObject);
     }
 }

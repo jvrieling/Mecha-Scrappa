@@ -119,6 +119,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!4 &44301610 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5331083962393535273, guid: d59f88d3da096e74ba57c8373be9c527, type: 3}
+  m_PrefabInstance: {fileID: 6052426772712454585}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &60749226
 GameObject:
   m_ObjectHideFlags: 0
@@ -163,6 +168,7 @@ GameObject:
   - component: {fileID: 145545114}
   - component: {fileID: 145545113}
   - component: {fileID: 145545116}
+  - component: {fileID: 145545117}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -288,6 +294,24 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &145545117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 145545112}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d8e425534ff9894d9fcf3c7a2b015fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
+  target: {fileID: 44301610}
+  targetRb: {fileID: 0}
+  baseSmoothTime: 0.25
+  defaultShakeDuration: 0.15
+  defaultShakeStrength: 0.4
+  defaultShakeVibrato: 20
 --- !u!1001 &191616436
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -519,7 +543,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
   m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -717,7 +741,7 @@ GameObject:
   - component: {fileID: 1608258594}
   - component: {fileID: 1608258595}
   - component: {fileID: 1608258596}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Visuals
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -969,7 +993,7 @@ GameObject:
   - component: {fileID: 1706636673}
   - component: {fileID: 1706636672}
   - component: {fileID: 1706636671}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Enemy
   m_TagString: Enemy
   m_Icon: {fileID: 0}

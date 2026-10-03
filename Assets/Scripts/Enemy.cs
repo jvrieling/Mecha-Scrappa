@@ -88,6 +88,8 @@ public class Enemy : MonoBehaviour, IDestructible
         currentHealth -= damageAmount;
         Debug.Log($"Enemy '{gameObject.name}' took {damageAmount} damage. Health remaining: {currentHealth}", gameObject);
 
+        CameraFollow.Shake();
+
         if (currentHealth <= 0f)
         {
             Die();
@@ -97,6 +99,7 @@ public class Enemy : MonoBehaviour, IDestructible
     private void Die()
     {
         Debug.Log($"Enemy '{gameObject.name}' destroyed!", gameObject);
+        CameraFollow.Shake(0.25f, 0.6f);
         Destroy(gameObject);
     }
 }
