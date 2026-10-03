@@ -1,12 +1,16 @@
 using UnityEngine;
+using System;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class Enemy : MonoBehaviour, IDestructible
 {
+    // Static Event for Damage Reporting
+    public static event Action<IDestructible, float> OnAnyEnemyDamaged;
+
     [Header("Health Settings")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float currentHealth;
-    [SerializeField] private GameObject deathPrefab; // Explode particle/prefab
+    [SerializeField] private GameObject deathPrefab;
 
     [Header("Targeting Settings")]
     [Tooltip("Minimum distance from current position when picking a target point.")]
@@ -21,7 +25,6 @@ public class Enemy : MonoBehaviour, IDestructible
     [SerializeField] private float engineForce = 15f;
     [Tooltip("Torque applied to rotate the enemy toward its target point.")]
     [SerializeField] private float rotationSpeed = 10f;
-    [Tooltip("Dot product threshold required to apply forward propulsion.")]
     [Range(0f, 1f)]
     [SerializeField] private float facingThreshold = 0.8f;
 
@@ -36,7 +39,6 @@ public class Enemy : MonoBehaviour, IDestructible
     private float nextSpawnTime;
     private Transform playerTransform;
 
-    // IDestructible Interface Implementation
     public float CurrentHealth => currentHealth;
     public float MaxHealth => maxHealth;
 
@@ -45,7 +47,6 @@ public class Enemy : MonoBehaviour, IDestructible
         rb = GetComponent<Rigidbody2D>();
         currentHealth = maxHealth;
 
-        // Ensure 0G environment damping settings
         rb.gravityScale = 0f;
         rb.linearDamping = 1f;
         rb.angularDamping = 1f;
@@ -53,7 +54,6 @@ public class Enemy : MonoBehaviour, IDestructible
 
     private void Start()
     {
-        // Find player in scene
         Player player = Player.Instance;
         if (player != null)
         {
@@ -66,14 +66,12 @@ public class Enemy : MonoBehaviour, IDestructible
 
     private void Update()
     {
-        // Periodic Junk spawning logic
         if (Time.time >= nextSpawnTime)
         {
             SpawnJunk();
             ScheduleNextJunkSpawn();
         }
 
-        // Cleanup if enemy gets too far from player (>1000m)
         if (playerTransform != null)
         {
             float distToPlayer = Vector2.Distance(transform.position, playerTransform.position);
@@ -88,23 +86,18 @@ public class Enemy : MonoBehaviour, IDestructible
     {
         float distanceToTarget = Vector2.Distance(rb.position, currentTargetPoint);
 
-        // Pick a new target if within arrival threshold
         if (distanceToTarget <= arrivalDistance)
         {
             PickNewTarget();
             return;
         }
 
-        // 1. Calculate direction to target
         Vector2 directionToTarget = (currentTargetPoint - rb.position).normalized;
-
-        // 2. Smoothly rotate toward target position
         float targetAngle = Mathf.Atan2(directionToTarget.y, directionToTarget.x) * Mathf.Rad2Deg - 90f;
         float angleDifference = Mathf.DeltaAngle(rb.rotation, targetAngle);
 
         rb.AddTorque(angleDifference * rotationSpeed * Time.fixedDeltaTime);
 
-        // 3. Propel forward ONLY if mostly facing target
         float alignment = Vector3.Dot(transform.up, directionToTarget);
 
         if (alignment >= facingThreshold)
@@ -113,14 +106,15 @@ public class Enemy : MonoBehaviour, IDestructible
         }
     }
 
-    // IDestructible Implementation
     public void TakeDamage(float damageAmount)
     {
         if (damageAmount <= 0f) return;
 
         currentHealth -= damageAmount;
 
-        // Screen shake trigger on damage
+        // Trigger the damage event
+        OnAnyEnemyDamaged?.Invoke(this, damageAmount);
+
         CameraFollow.Shake();
 
         if (currentHealth <= 0f)
@@ -136,17 +130,16 @@ public class Enemy : MonoBehaviour, IDestructible
             Instantiate(deathPrefab, transform.position, transform.rotation);
         }
 
-        // Spawn 3 to 6 Junk prefabs with a small impulse
         if (junkPrefab != null)
         {
-            int junkCount = Random.Range(3, 7); // 3 to 6
+            int junkCount = UnityEngine.Random.Range(3, 7);
             for (int i = 0; i < junkCount; i++)
             {
                 GameObject junkObj = Instantiate(debrisPrefab, transform.position, Quaternion.identity);
                 Rigidbody2D junkRb = junkObj.GetComponent<Rigidbody2D>();
                 if (junkRb != null)
                 {
-                    Vector2 impulseDir = Random.insideUnitCircle.normalized;
+                    Vector2 impulseDir = UnityEngine.Random.insideUnitCircle.normalized;
                     junkRb.AddForce(impulseDir * 0.4f, ForceMode2D.Impulse);
                 }
             }
@@ -159,19 +152,17 @@ public class Enemy : MonoBehaviour, IDestructible
     {
         Vector2 moveDirection;
 
-        // Bias target selection in general direction of player if available
         if (playerTransform != null)
         {
             Vector2 dirToPlayer = ((Vector2)playerTransform.position - rb.position).normalized;
-            // Blend player direction with a random offset vector
-            moveDirection = Vector2.Lerp(dirToPlayer, Random.insideUnitCircle.normalized, 0.4f).normalized;
+            moveDirection = Vector2.Lerp(dirToPlayer, UnityEngine.Random.insideUnitCircle.normalized, 0.4f).normalized;
         }
         else
         {
-            moveDirection = Random.insideUnitCircle.normalized;
+            moveDirection = UnityEngine.Random.insideUnitCircle.normalized;
         }
 
-        float randomDistance = Random.Range(minTargetDistance, maxTargetDistance);
+        float randomDistance = UnityEngine.Random.Range(minTargetDistance, maxTargetDistance);
         currentTargetPoint = rb.position + (moveDirection * randomDistance);
     }
 
@@ -185,7 +176,7 @@ public class Enemy : MonoBehaviour, IDestructible
 
     private void ScheduleNextJunkSpawn()
     {
-        nextSpawnTime = Time.time + Random.Range(minSpawnInterval, maxSpawnInterval);
+        nextSpawnTime = Time.time + UnityEngine.Random.Range(minSpawnInterval, maxSpawnInterval);
     }
 
     private void OnDrawGizmosSelected()
