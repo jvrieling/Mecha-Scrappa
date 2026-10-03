@@ -1,5 +1,4 @@
 using UnityEngine;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -8,23 +7,23 @@ using UnityEditor;
 [RequireComponent(typeof(ParticleSystem))]
 public class JointParticleBeam : MonoBehaviour
 {
+    [Header("Beam Color Settings")]
+    public Color startColor = Color.yellow;
+    public Color endColor = Color.white;
+
     [Header("Edit Mode Preview")]
     [SerializeField] private bool previewInEditMode = false;
     [SerializeField] private Transform testStartPoint;
     [SerializeField] private Transform testEndPoint;
-
-    public Color startColor = Color.yellow;
-    public Color endColor = Color.white;
 
     private ParticleSystem ps;
     private ParticleSystem.Particle[] particles;
 
     private void OnEnable()
     {
-        ps = GetComponent<ParticleSystem>();
+        InitializeParticleSystem();
 
 #if UNITY_EDITOR
-        // Ensure the editor scene view continuously repaints while editing particles
         EditorApplication.update += OnEditorUpdate;
 #endif
     }
@@ -36,9 +35,17 @@ public class JointParticleBeam : MonoBehaviour
 #endif
     }
 
+    private void InitializeParticleSystem()
+    {
+        if (ps == null) ps = GetComponent<ParticleSystem>();
+
+        // Ensure particles render in World Space so world coordinates map correctly
+        var main = ps.main;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+    }
+
     private void OnEditorUpdate()
     {
-        // Preview particle line in Scene view during Edit Mode when enabled
         if (!Application.isPlaying && previewInEditMode && testStartPoint != null && testEndPoint != null)
         {
             RenderBeam(testStartPoint.position, testEndPoint.position);
@@ -46,12 +53,11 @@ public class JointParticleBeam : MonoBehaviour
     }
 
     /// <summary>
-    /// Emits and places particles evenly along a straight line between two points.
-    /// Works in both Play Mode and Edit Mode.
+    /// Emits and places particles evenly along a straight line between two points in World Space.
     /// </summary>
     public void RenderBeam(Vector3 startPoint, Vector3 endPoint, int particleCount = 12)
     {
-        if (ps == null) ps = GetComponent<ParticleSystem>();
+        if (ps == null) InitializeParticleSystem();
 
         if (particles == null || particles.Length < particleCount)
         {
@@ -73,7 +79,6 @@ public class JointParticleBeam : MonoBehaviour
         ps.SetParticles(particles, particleCount);
 
 #if UNITY_EDITOR
-        // Force the Scene View to repaint immediately in Edit Mode
         if (!Application.isPlaying)
         {
             SceneView.RepaintAll();
@@ -83,7 +88,7 @@ public class JointParticleBeam : MonoBehaviour
 
     public void ClearBeam()
     {
-        if (ps == null) ps = GetComponent<ParticleSystem>();
+        if (ps == null) InitializeParticleSystem();
         ps.Clear();
 
 #if UNITY_EDITOR

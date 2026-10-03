@@ -1,12 +1,6 @@
 using UnityEngine;
 
-public enum JointType
-{
-    Shoulder,
-    Elbow,
-    Hand,
-    Universal
-}
+public enum JointType { Shoulder, Elbow, Hand, Universal }
 
 public class JointSlot2D : MonoBehaviour
 {
@@ -28,6 +22,7 @@ public class JointSlot2D : MonoBehaviour
     [SerializeField] private JointParticleBeam particleBeam;
 
     private PlayerJointManager jointManager;
+    private Vector3 worldPosAppliedForce, pullDirectionDebug;
 
     public JointType JointType => jointType;
     public bool IsOccupied { get => isOccupied; set => isOccupied = value; }
@@ -36,12 +31,13 @@ public class JointSlot2D : MonoBehaviour
     {
         // Try finding the joint manager on parent/root object
         jointManager = GetComponentInParent<PlayerJointManager>();
+        if (particleBeam == null) particleBeam = GetComponentInChildren<JointParticleBeam>();
     }
 
     private void FixedUpdate()
     {
         // Only active, unoccupied slots connected to the player chain perform magnet pulling
-        if (!isMagnetActive || isOccupied | jointManager == null)
+        if (!isMagnetActive || isOccupied || jointManager == null)
         {
             if (particleBeam != null) particleBeam.ClearBeam();
             return;
@@ -52,57 +48,60 @@ public class JointSlot2D : MonoBehaviour
 
     private void CheckAndPullNearbySlots()
     {
-        // Search for nearby colliders within the pull radius
         Collider2D[] hitColliders = Physics2D.OverlapCircleAll(transform.position, pullRadius);
+        bool pulledAnyTarget = false;
 
         foreach (Collider2D hit in hitColliders)
         {
-            // Look for a JointSlot2D component on the detected collider or its children
             JointSlot2D nearbySlot = hit.GetComponent<JointSlot2D>() ?? hit.GetComponentInChildren<JointSlot2D>();
 
-            // Skip if no slot found, if it's already attached/occupied, or if it belongs to our own body
             if (nearbySlot == null || nearbySlot.IsOccupied || nearbySlot.transform.IsChildOf(transform.root))
                 continue;
 
-            // Ensure the slot types match (or either is Universal)
             if (nearbySlot.JointType != jointType && jointType != JointType.Universal && nearbySlot.JointType != JointType.Universal)
                 continue;
 
             Rigidbody2D targetRb = nearbySlot.GetComponentInParent<Rigidbody2D>();
             if (targetRb == null) continue;
 
-            // Calculate direction and distance from the target's joint to this slot
             Vector2 slotPosition = transform.position;
             Vector2 targetJointPos = nearbySlot.transform.position;
             Vector2 pullDirection = slotPosition - targetJointPos;
             float distance = pullDirection.magnitude;
 
-            particleBeam.RenderBeam(transform.position, targetJointPos);
+            pulledAnyTarget = true;
+
+            // Render particle beam between magnet slot and target slot
+            if (particleBeam != null)
+            {
+                particleBeam.RenderBeam(transform.position, targetJointPos);
+            }
 
             if (distance <= attachThreshold)
             {
-                // Trigger full attachment when close enough
+                if (particleBeam != null) particleBeam.ClearBeam();
                 jointManager.AttachArm(nearbySlot, this, jointType);
                 Debug.Log($"{gameObject.name} attaching {nearbySlot.gameObject.name}", nearbySlot.gameObject);
-                continue;
+                break;
             }
             else
             {
-                // Apply a pulling force directly towards the slot position
                 Vector2 pullForce = pullDirection.normalized * pullSpeed;
                 targetRb.AddForceAtPosition(pullForce, targetJointPos, ForceMode2D.Force);
                 worldPosAppliedForce = targetJointPos;
                 pullDirectionDebug = pullDirection;
-                Debug.Log($"Pulling on {nearbySlot.gameObject.name}", nearbySlot.gameObject);
             }
+        }
+
+        // If no targets were pulled this frame, clear existing particles
+        if (!pulledAnyTarget && particleBeam != null)
+        {
+            particleBeam.ClearBeam();
         }
     }
 
-    Vector3 worldPosAppliedForce, pullDirectionDebug;
-
     private void OnDrawGizmosSelected()
     {
-        // Visualize pull range in Scene View when selected
         Gizmos.color = isOccupied ? Color.red : Color.cyan;
         Gizmos.DrawWireSphere(transform.position, pullRadius);
 

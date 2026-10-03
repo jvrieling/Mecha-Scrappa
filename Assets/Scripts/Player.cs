@@ -1,43 +1,90 @@
+using System;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, IDestructible
 {
+    [Header("Health Settings")]
+    [SerializeField] private float maxHealth = 200f;
+    [SerializeField] private float currentHealth;
+
     [Header("Movement Settings")]
     [Tooltip("Strength of the impulse force applied on key press.")]
     [SerializeField] private float pushForce = 10f;
 
-    public Rigidbody2D rb;
+    public Rigidbody2D rb; 
+    public ParticleSystem leftBoost, rightBoost, upBoost, downBoost; 
 
-    public ParticleSystem leftBoost, rightBoost, upBoost, downBoost;
+    public float CurrentHealth => currentHealth;
+    public float MaxHealth => maxHealth;
+
+    private void OnValidate()
+    {
+        if (maxHealth < 0f)
+        {
+            maxHealth = 0f;
+        }
+
+        if (rb == null)
+        {
+            rb = GetComponent<Rigidbody2D>();
+        }
+    }
+
+    private void Awake()
+    {
+        if (rb == null)
+        {
+            throw new NullReferenceException($"rb on {gameObject.name} is missing or null!");
+        }
+
+        currentHealth = maxHealth;
+    }
 
     private void Update()
     {
-        // Check for individual arrow key presses on the frame they are pressed down
-        if (Input.GetKeyDown(KeyCode.UpArrow))
+        if (Input.GetKeyDown(KeyCode.UpArrow)) 
         {
-            ApplyPush(Vector2.up);
-            upBoost.Play();
+            ApplyPush(Vector2.up); 
+            if (upBoost != null) upBoost.Play(); 
         }
-        else if (Input.GetKeyDown(KeyCode.DownArrow))
+        else if (Input.GetKeyDown(KeyCode.DownArrow)) 
         {
-            ApplyPush(Vector2.down);
-            downBoost.Play();
+            ApplyPush(Vector2.down); 
+            if (downBoost != null) downBoost.Play(); 
         }
-        else if (Input.GetKeyDown(KeyCode.LeftArrow))
+        else if (Input.GetKeyDown(KeyCode.LeftArrow)) 
         {
-            ApplyPush(Vector2.left);
-            leftBoost.Play();
+            ApplyPush(Vector2.left); 
+            if (leftBoost != null) leftBoost.Play(); 
         }
-        else if (Input.GetKeyDown(KeyCode.RightArrow))
+        else if (Input.GetKeyDown(KeyCode.RightArrow)) 
         {
-            ApplyPush(Vector2.right);   
-            rightBoost.Play();
+            ApplyPush(Vector2.right); 
+            if (rightBoost != null) rightBoost.Play(); 
         }
     }
 
     private void ApplyPush(Vector2 direction)
     {
-        // Apply immediate force impulse taking mass into account
-        rb.AddForce(direction * pushForce, ForceMode2D.Impulse);
+        rb.AddForce(direction * pushForce, ForceMode2D.Impulse); 
+    }
+
+    public void TakeDamage(float damageAmount)
+    {
+        if (damageAmount <= 0f) return;
+
+        currentHealth -= damageAmount;
+        Debug.Log($"Player took {damageAmount} damage. Remaining health: {currentHealth}", gameObject);
+
+        if (currentHealth <= 0f)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        Debug.Log("Player was destroyed!", gameObject);
+        Destroy(gameObject);
     }
 }

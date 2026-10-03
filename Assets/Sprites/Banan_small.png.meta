@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 0a73e51768c49bc4885ae447725a1bea
+guid: 3d4449fd72f5b08498b758e93c341ed5
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4996333541550727320
-    second: pixel_1790901206021_0
+      213: -6718732810470332611
+    second: Banan_small_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -37,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 0
+    filterMode: 1
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 130
+  spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -128,12 +128,12 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: pixel_1790901206021_0
+      name: Banan_small_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 64
+        width: 61
         height: 64
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -143,8 +143,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 890208362ea865540800000000000000
-      internalID: 4996333541550727320
+      spriteID: d3767233b1442c2a0800000000000000
+      internalID: -6718732810470332611
       vertices: []
       indices: 
       edges: []
@@ -163,7 +163,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      pixel_1790901206021_0: 4996333541550727320
+      Banan_small_0: -6718732810470332611
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
