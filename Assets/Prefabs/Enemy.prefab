@@ -195,6 +195,7 @@ MonoBehaviour:
   rotationSpeed: 10
   facingThreshold: 0.8
   junkPrefab: {fileID: 847034374620655072, guid: 53c01778767d3484696ab7e90e9d918d, type: 3}
+  debrisPrefab: {fileID: 5609616773066479006, guid: 120b8543e5d9ab5469560f81ae682234, type: 3}
   minSpawnInterval: 3
   maxSpawnInterval: 5
 --- !u!50 &7193410457146185180

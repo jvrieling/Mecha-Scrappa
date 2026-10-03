@@ -21,18 +21,20 @@ public class Enemy : MonoBehaviour, IDestructible
     [SerializeField] private float engineForce = 15f;
     [Tooltip("Torque applied to rotate the enemy toward its target point.")]
     [SerializeField] private float rotationSpeed = 10f;
-    [Tooltip("Dot product threshold required to apply forward propulsion (e.g., 0.8 means within ~36° of facing target).")]
+    [Tooltip("Dot product threshold required to apply forward propulsion.")]
     [Range(0f, 1f)]
     [SerializeField] private float facingThreshold = 0.8f;
 
     [Header("Junk Spawning Settings")]
     [SerializeField] private GameObject junkPrefab;
+    [SerializeField] private GameObject debrisPrefab;
     [SerializeField] private float minSpawnInterval = 3f;
     [SerializeField] private float maxSpawnInterval = 5f;
 
     private Rigidbody2D rb;
     private Vector2 currentTargetPoint;
     private float nextSpawnTime;
+    private Transform playerTransform;
 
     // IDestructible Interface Implementation
     public float CurrentHealth => currentHealth;
@@ -51,17 +53,34 @@ public class Enemy : MonoBehaviour, IDestructible
 
     private void Start()
     {
+        // Find player in scene
+        Player player = Player.Instance;
+        if (player != null)
+        {
+            playerTransform = player.transform;
+        }
+
         PickNewTarget();
         ScheduleNextJunkSpawn();
     }
 
     private void Update()
     {
-        // Handle Junk spawning logic
+        // Periodic Junk spawning logic
         if (Time.time >= nextSpawnTime)
         {
             SpawnJunk();
             ScheduleNextJunkSpawn();
+        }
+
+        // Cleanup if enemy gets too far from player (>1000m)
+        if (playerTransform != null)
+        {
+            float distToPlayer = Vector2.Distance(transform.position, playerTransform.position);
+            if (distToPlayer > 1000f)
+            {
+                Destroy(gameObject);
+            }
         }
     }
 
@@ -85,25 +104,23 @@ public class Enemy : MonoBehaviour, IDestructible
 
         rb.AddTorque(angleDifference * rotationSpeed * Time.fixedDeltaTime);
 
-        // 3. Propel forward ONLY if mostly facing the target point
-        // Using Vector3.Dot to check alignment between facing direction (transform.up) and directionToTarget
+        // 3. Propel forward ONLY if mostly facing target
         float alignment = Vector3.Dot(transform.up, directionToTarget);
 
         if (alignment >= facingThreshold)
         {
-            // Always pushes transform.up (forward), so if thrown off course by collisions it accelerates in its current facing direction
             rb.AddForce(transform.up * engineForce, ForceMode2D.Force);
         }
     }
 
-    // IDestructible Interface Implementation
+    // IDestructible Implementation
     public void TakeDamage(float damageAmount)
     {
         if (damageAmount <= 0f) return;
 
         currentHealth -= damageAmount;
 
-        // Trigger screen shake on damage
+        // Screen shake trigger on damage
         CameraFollow.Shake();
 
         if (currentHealth <= 0f)
@@ -119,15 +136,43 @@ public class Enemy : MonoBehaviour, IDestructible
             Instantiate(deathPrefab, transform.position, transform.rotation);
         }
 
+        // Spawn 3 to 6 Junk prefabs with a small impulse
+        if (junkPrefab != null)
+        {
+            int junkCount = Random.Range(3, 7); // 3 to 6
+            for (int i = 0; i < junkCount; i++)
+            {
+                GameObject junkObj = Instantiate(debrisPrefab, transform.position, Quaternion.identity);
+                Rigidbody2D junkRb = junkObj.GetComponent<Rigidbody2D>();
+                if (junkRb != null)
+                {
+                    Vector2 impulseDir = Random.insideUnitCircle.normalized;
+                    junkRb.AddForce(impulseDir * 0.4f, ForceMode2D.Impulse);
+                }
+            }
+        }
+
         Destroy(gameObject);
     }
 
     private void PickNewTarget()
     {
-        Vector2 randomDirection = Random.insideUnitCircle.normalized;
-        float randomDistance = Random.Range(minTargetDistance, maxTargetDistance);
+        Vector2 moveDirection;
 
-        currentTargetPoint = rb.position + (randomDirection * randomDistance);
+        // Bias target selection in general direction of player if available
+        if (playerTransform != null)
+        {
+            Vector2 dirToPlayer = ((Vector2)playerTransform.position - rb.position).normalized;
+            // Blend player direction with a random offset vector
+            moveDirection = Vector2.Lerp(dirToPlayer, Random.insideUnitCircle.normalized, 0.4f).normalized;
+        }
+        else
+        {
+            moveDirection = Random.insideUnitCircle.normalized;
+        }
+
+        float randomDistance = Random.Range(minTargetDistance, maxTargetDistance);
+        currentTargetPoint = rb.position + (moveDirection * randomDistance);
     }
 
     private void SpawnJunk()

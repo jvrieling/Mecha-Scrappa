@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    public static Player Instance;
+
     [Header("Movement Settings")]
     [Tooltip("Strength of the impulse force applied on key press.")]
     [SerializeField] private float pushForce = 10f;
@@ -15,6 +17,11 @@ public class Player : MonoBehaviour
     public Rigidbody2D rb;
 
     public ParticleSystem leftBoost, rightBoost, upBoost, downBoost;
+
+    private void Awake()
+    {
+        Instance = this;
+    }
 
     private void Update()
     {
