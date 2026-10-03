@@ -7,7 +7,6 @@ public class PlayerJointManager : MonoBehaviour
 
     private void Awake()
     {
-        // Auto-find all JointSlot2D children on startup if not assigned
         if (bodySlots == null || bodySlots.Length == 0)
         {
             bodySlots = GetComponentsInChildren<JointSlot2D>();
@@ -21,30 +20,41 @@ public class PlayerJointManager : MonoBehaviour
     {
         GameObject armObj = targetSlot.transform.parent.gameObject;
         Rigidbody2D playerRb = GetComponent<Rigidbody2D>();
-        Rigidbody2D armRb = armObj.GetComponentInParent<Rigidbody2D>();
 
-        // Align arm position so its anchor matches the body slot exactly
+        // 1. Align position and rotation first
         Vector3 offset = armObj.transform.position - targetSlot.transform.position;
         armObj.transform.position = slotToAttachTo.transform.position + offset;
         armObj.transform.rotation = slotToAttachTo.transform.rotation;
 
-        // Set up the HingeJoint2D on the arm
+        // Get HingeJoint2D
         HingeJoint2D hinge = armObj.GetComponentInParent<HingeJoint2D>();
         if (hinge == null)
         {
             throw new System.Exception($"No hinge joint was found on {armObj.name}'s parent!");
         }
 
-        // Configure the joint
+        // 2. Disable joint temporarily to reset reference frame calculations
+        hinge.enabled = false;
+
+        // 3. Configure connected body and anchors
         hinge.connectedBody = playerRb;
         hinge.autoConfigureConnectedAnchor = false;
-        hinge.enabled = true;
 
-        // Set local anchor points relative to each object
+        // Set local anchors relative to each object's transform space
         hinge.anchor = armObj.transform.InverseTransformPoint(targetSlot.transform.position);
         hinge.connectedAnchor = transform.InverseTransformPoint(slotToAttachTo.transform.position);
 
-        // Mark slot as filled
+        // 4. Re-enable the joint so Unity computes reference limits from the current orientation
+        hinge.enabled = true;
+
+        // Register attachment in Part component if present
+        Part part = armObj.GetComponentInParent<Part>();
+        if (part != null)
+        {
+            part.SetAttachmentConnection(targetSlot, slotToAttachTo);
+        }
+
+        // Mark slots occupied
         slotToAttachTo.IsOccupied = true;
         targetSlot.IsOccupied = true;
         slotToAttachTo.gameObject.SetActive(false);

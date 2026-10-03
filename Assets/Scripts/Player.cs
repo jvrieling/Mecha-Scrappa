@@ -1,90 +1,67 @@
-using System;
 using UnityEngine;
 
-public class Player : MonoBehaviour, IDestructible
+public class Player : MonoBehaviour
 {
-    [Header("Health Settings")]
-    [SerializeField] private float maxHealth = 200f;
-    [SerializeField] private float currentHealth;
-
     [Header("Movement Settings")]
     [Tooltip("Strength of the impulse force applied on key press.")]
     [SerializeField] private float pushForce = 10f;
+    [Tooltip("Torque impulse force applied when pressing Left/Right arrow keys.")]
+    [SerializeField] private float torqueForce = 5f;
 
-    public Rigidbody2D rb; 
-    public ParticleSystem leftBoost, rightBoost, upBoost, downBoost; 
+    [Header("Boost Particles Settings")]
+    [Tooltip("Parent object containing leftBoost, rightBoost, upBoost, downBoost particle systems.")]
+    [SerializeField] private Transform boostParticlesParent;
 
-    public float CurrentHealth => currentHealth;
-    public float MaxHealth => maxHealth;
+    public Rigidbody2D rb;
 
-    private void OnValidate()
-    {
-        if (maxHealth < 0f)
-        {
-            maxHealth = 0f;
-        }
-
-        if (rb == null)
-        {
-            rb = GetComponent<Rigidbody2D>();
-        }
-    }
-
-    private void Awake()
-    {
-        if (rb == null)
-        {
-            throw new NullReferenceException($"rb on {gameObject.name} is missing or null!");
-        }
-
-        currentHealth = maxHealth;
-    }
+    public ParticleSystem leftBoost, rightBoost, upBoost, downBoost;
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.UpArrow)) 
+        // Rotate Left (counter-clockwise)
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
-            ApplyPush(Vector2.up); 
-            if (upBoost != null) upBoost.Play(); 
+            rb.AddTorque(torqueForce, ForceMode2D.Impulse);
+            OrientBoostParticles(Vector2.left);
+            leftBoost.Play();
         }
-        else if (Input.GetKeyDown(KeyCode.DownArrow)) 
+        // Rotate Right (clockwise)
+        else if (Input.GetKeyDown(KeyCode.RightArrow))
         {
-            ApplyPush(Vector2.down); 
-            if (downBoost != null) downBoost.Play(); 
+            rb.AddTorque(-torqueForce, ForceMode2D.Impulse);
+            OrientBoostParticles(Vector2.right);
+            rightBoost.Play();
         }
-        else if (Input.GetKeyDown(KeyCode.LeftArrow)) 
+        // Push Forward (relative to player transform)
+        else if (Input.GetKeyDown(KeyCode.UpArrow))
         {
-            ApplyPush(Vector2.left); 
-            if (leftBoost != null) leftBoost.Play(); 
+            ApplyPush(transform.up);
+            OrientBoostParticles(Vector2.up);
+            upBoost.Play();
         }
-        else if (Input.GetKeyDown(KeyCode.RightArrow)) 
+        // Push Backward (relative to player transform)
+        else if (Input.GetKeyDown(KeyCode.DownArrow))
         {
-            ApplyPush(Vector2.right); 
-            if (rightBoost != null) rightBoost.Play(); 
+            ApplyPush(-transform.up);
+            OrientBoostParticles(Vector2.down);
+            downBoost.Play();
         }
     }
 
     private void ApplyPush(Vector2 direction)
     {
-        rb.AddForce(direction * pushForce, ForceMode2D.Impulse); 
+        // Apply immediate force impulse taking mass into account
+        rb.AddForce(direction * pushForce, ForceMode2D.Impulse);
     }
 
-    public void TakeDamage(float damageAmount)
+    /// <summary>
+    /// Rotates the parent object of the boost particles to face the intended direction.
+    /// </summary>
+    private void OrientBoostParticles(Vector2 direction)
     {
-        if (damageAmount <= 0f) return;
+        if (boostParticlesParent == null) return;
 
-        currentHealth -= damageAmount;
-        Debug.Log($"Player took {damageAmount} damage. Remaining health: {currentHealth}", gameObject);
-
-        if (currentHealth <= 0f)
-        {
-            Die();
-        }
-    }
-
-    private void Die()
-    {
-        Debug.Log("Player was destroyed!", gameObject);
-        Destroy(gameObject);
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+        boostParticlesParent.localRotation = Quaternion.Euler(0f, 0f, angle);
     }
 }

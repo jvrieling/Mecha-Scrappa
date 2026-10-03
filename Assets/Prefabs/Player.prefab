@@ -145,9 +145,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f745105d94f479c47a4f59a7bc707ca1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
-  maxHealth: 200
-  currentHealth: 0
   pushForce: 15
+  torqueForce: 5
+  boostParticlesParent: {fileID: 4323071102454463962}
   rb: {fileID: 6493296581064242220}
   leftBoost: {fileID: 9200780501105814214}
   rightBoost: {fileID: 4221691321851963088}
