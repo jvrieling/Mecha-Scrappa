@@ -13,6 +13,9 @@ public class JointParticleBeam : MonoBehaviour
     [SerializeField] private Transform testStartPoint;
     [SerializeField] private Transform testEndPoint;
 
+    public Color startColor = Color.yellow;
+    public Color endColor = Color.white;
+
     private ParticleSystem ps;
     private ParticleSystem.Particle[] particles;
 
@@ -56,8 +59,6 @@ public class JointParticleBeam : MonoBehaviour
         }
 
         float step = 1f / Mathf.Max(1, particleCount - 1);
-        Color startColor = Color.cyan;
-        Color endColor = Color.white;
 
         for (int i = 0; i < particleCount; i++)
         {

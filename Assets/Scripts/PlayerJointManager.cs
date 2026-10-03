@@ -19,21 +19,12 @@ public class PlayerJointManager : MonoBehaviour
     /// </summary>
     public bool AttachArm(JointSlot2D targetSlot, JointSlot2D slotToAttachTo, JointType targetType)
     {
-        GameObject armObj =  targetSlot.gameObject;
-
-        // Find the arm's corresponding joint anchor
-        JointSlot2D armAnchor = armObj.GetComponentInChildren<JointSlot2D>();
-        if (armAnchor == null)
-        {
-            Debug.LogError("The object being attached has no JointSlot2D component!");
-            return false;
-        }
-
+        GameObject armObj = targetSlot.transform.parent.gameObject;
         Rigidbody2D playerRb = GetComponent<Rigidbody2D>();
-        Rigidbody2D armRb = armObj.GetComponent<Rigidbody2D>();
+        Rigidbody2D armRb = armObj.GetComponentInParent<Rigidbody2D>();
 
         // Align arm position so its anchor matches the body slot exactly
-        Vector3 offset = armObj.transform.position - armAnchor.transform.position;
+        Vector3 offset = armObj.transform.position - targetSlot.transform.position;
         armObj.transform.position = slotToAttachTo.transform.position + offset;
         armObj.transform.rotation = slotToAttachTo.transform.rotation;
 
@@ -50,7 +41,7 @@ public class PlayerJointManager : MonoBehaviour
         hinge.enabled = true;
 
         // Set local anchor points relative to each object
-        hinge.anchor = armObj.transform.InverseTransformPoint(armAnchor.transform.position);
+        hinge.anchor = armObj.transform.InverseTransformPoint(targetSlot.transform.position);
         hinge.connectedAnchor = transform.InverseTransformPoint(slotToAttachTo.transform.position);
 
         // Mark slot as filled
