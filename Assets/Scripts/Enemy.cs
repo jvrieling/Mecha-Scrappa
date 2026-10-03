@@ -1,5 +1,3 @@
-using System;
-using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -8,86 +6,104 @@ public class Enemy : MonoBehaviour, IDestructible
     [Header("Health Settings")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float currentHealth;
+    [SerializeField] private GameObject deathPrefab; // Explode particle/prefab
 
-    [Header("Movement Settings")]
-    [SerializeField] private Rigidbody2D enemyRigidbody;
-    [Tooltip("Strength of the impulse force applied during a boost.")]
-    [SerializeField] private float pushForce = 10f;
+    [Header("Targeting Settings")]
+    [Tooltip("Minimum distance from current position when picking a target point.")]
+    [SerializeField] private float minTargetDistance = 20f;
+    [Tooltip("Maximum distance from current position when picking a target point.")]
+    [SerializeField] private float maxTargetDistance = 100f;
+    [Tooltip("Distance threshold to consider target reached.")]
+    [SerializeField] private float arrivalDistance = 5f;
 
-    [Header("Boost Timing")]
-    [Tooltip("Minimum time in seconds between random boosts.")]
-    [SerializeField] private float minBoostInterval = 1.0f;
-    [Tooltip("Maximum time in seconds between random boosts.")]
-    [SerializeField] private float maxBoostInterval = 3.5f;
+    [Header("Movement Physics Settings")]
+    [Tooltip("Force applied to propel the enemy forward toward its target.")]
+    [SerializeField] private float engineForce = 15f;
+    [Tooltip("Torque applied to rotate the enemy toward its target point.")]
+    [SerializeField] private float rotationSpeed = 10f;
+    [Tooltip("Dot product threshold required to apply forward propulsion (e.g., 0.8 means within ~36° of facing target).")]
+    [Range(0f, 1f)]
+    [SerializeField] private float facingThreshold = 0.8f;
 
+    [Header("Junk Spawning Settings")]
+    [SerializeField] private GameObject junkPrefab;
+    [SerializeField] private float minSpawnInterval = 3f;
+    [SerializeField] private float maxSpawnInterval = 5f;
+
+    private Rigidbody2D rb;
+    private Vector2 currentTargetPoint;
+    private float nextSpawnTime;
+
+    // IDestructible Interface Implementation
     public float CurrentHealth => currentHealth;
     public float MaxHealth => maxHealth;
 
-    private void OnValidate()
-    {
-        if (maxHealth < 0f)
-        {
-            maxHealth = 0f;
-        }
-
-        if (enemyRigidbody == null)
-        {
-            enemyRigidbody = GetComponent<Rigidbody2D>();
-        }
-    }
-
     private void Awake()
     {
-        if (enemyRigidbody == null)
-        {
-            throw new NullReferenceException($"enemyRigidbody on {gameObject.name} is missing or null!");
-        }
-
+        rb = GetComponent<Rigidbody2D>();
         currentHealth = maxHealth;
+
+        // Ensure 0G environment damping settings
+        rb.gravityScale = 0f;
+        rb.linearDamping = 1f;
+        rb.angularDamping = 1f;
     }
 
     private void Start()
     {
-        StartCoroutine(RandomBoostRoutine());
+        PickNewTarget();
+        ScheduleNextJunkSpawn();
     }
 
-    private IEnumerator RandomBoostRoutine()
+    private void Update()
     {
-        while (true)
+        // Handle Junk spawning logic
+        if (Time.time >= nextSpawnTime)
         {
-            float waitTime = UnityEngine.Random.Range(minBoostInterval, maxBoostInterval);
-            yield return new WaitForSeconds(waitTime);
-
-            Vector2 randomCardinalDirection = GetRandomCardinalDirection();
-            ApplyPush(randomCardinalDirection);
+            SpawnJunk();
+            ScheduleNextJunkSpawn();
         }
     }
 
-    private Vector2 GetRandomCardinalDirection()
+    private void FixedUpdate()
     {
-        int randomIndex = UnityEngine.Random.Range(0, 4);
-        switch (randomIndex)
+        float distanceToTarget = Vector2.Distance(rb.position, currentTargetPoint);
+
+        // Pick a new target if within arrival threshold
+        if (distanceToTarget <= arrivalDistance)
         {
-            case 0: return Vector2.up;
-            case 1: return Vector2.down;
-            case 2: return Vector2.left;
-            case 3: return Vector2.right;
-            default: return Vector2.up;
+            PickNewTarget();
+            return;
+        }
+
+        // 1. Calculate direction to target
+        Vector2 directionToTarget = (currentTargetPoint - rb.position).normalized;
+
+        // 2. Smoothly rotate toward target position
+        float targetAngle = Mathf.Atan2(directionToTarget.y, directionToTarget.x) * Mathf.Rad2Deg - 90f;
+        float angleDifference = Mathf.DeltaAngle(rb.rotation, targetAngle);
+
+        rb.AddTorque(angleDifference * rotationSpeed * Time.fixedDeltaTime);
+
+        // 3. Propel forward ONLY if mostly facing the target point
+        // Using Vector3.Dot to check alignment between facing direction (transform.up) and directionToTarget
+        float alignment = Vector3.Dot(transform.up, directionToTarget);
+
+        if (alignment >= facingThreshold)
+        {
+            // Always pushes transform.up (forward), so if thrown off course by collisions it accelerates in its current facing direction
+            rb.AddForce(transform.up * engineForce, ForceMode2D.Force);
         }
     }
 
-    private void ApplyPush(Vector2 direction)
-    {
-        enemyRigidbody.AddForce(direction * pushForce, ForceMode2D.Impulse);
-    }
-
+    // IDestructible Interface Implementation
     public void TakeDamage(float damageAmount)
     {
         if (damageAmount <= 0f) return;
 
         currentHealth -= damageAmount;
-        Debug.Log($"Enemy '{gameObject.name}' took {damageAmount} damage. Health remaining: {currentHealth}", gameObject);
 
+        // Trigger screen shake on damage
         CameraFollow.Shake();
 
         if (currentHealth <= 0f)
@@ -98,8 +114,39 @@ public class Enemy : MonoBehaviour, IDestructible
 
     private void Die()
     {
-        Debug.Log($"Enemy '{gameObject.name}' destroyed!", gameObject);
-        CameraFollow.Shake(0.25f, 0.6f);
+        if (deathPrefab != null)
+        {
+            Instantiate(deathPrefab, transform.position, transform.rotation);
+        }
+
         Destroy(gameObject);
+    }
+
+    private void PickNewTarget()
+    {
+        Vector2 randomDirection = Random.insideUnitCircle.normalized;
+        float randomDistance = Random.Range(minTargetDistance, maxTargetDistance);
+
+        currentTargetPoint = rb.position + (randomDirection * randomDistance);
+    }
+
+    private void SpawnJunk()
+    {
+        if (junkPrefab != null)
+        {
+            Instantiate(junkPrefab, transform.position, transform.rotation);
+        }
+    }
+
+    private void ScheduleNextJunkSpawn()
+    {
+        nextSpawnTime = Time.time + Random.Range(minSpawnInterval, maxSpawnInterval);
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(currentTargetPoint, arrivalDistance);
+        Gizmos.DrawLine(transform.position, currentTargetPoint);
     }
 }

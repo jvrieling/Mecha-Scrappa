@@ -52,8 +52,8 @@ public class CameraFollow : MonoBehaviour
         Vector3 viewportPos = cam.WorldToViewportPoint(target.position);
 
         // Center 20% deadzone means viewport bounds are between 0.40 and 0.60
-        bool outsideDeadzone = viewportPos.x < 0.40f || viewportPos.x > 0.60f ||
-                               viewportPos.y < 0.40f || viewportPos.y > 0.60f;
+        bool outsideDeadzone = viewportPos.x < 0.45f || viewportPos.x > 0.55f ||
+                               viewportPos.y < 0.45f || viewportPos.y > 0.55f;
 
         if (outsideDeadzone)
         {
@@ -71,7 +71,7 @@ public class CameraFollow : MonoBehaviour
         {
             speedMultiplier = 1.5f;
         }
-        else if (maxEdgeDist > 0.1f)
+        else if (maxEdgeDist > 0.2f)
         {
             // Smooth blend from 1.0x at deadzone edge (20%) to 1.5x at 90% edge proximity
             float t = (maxEdgeDist - 0.2f) / (0.9f - 0.2f);
