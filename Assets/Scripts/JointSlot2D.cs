@@ -109,4 +109,9 @@ public class JointSlot2D : MonoBehaviour
         Gizmos.DrawSphere(worldPosAppliedForce, 0.3f);
         Gizmos.DrawLine(worldPosAppliedForce, worldPosAppliedForce + pullDirectionDebug.normalized);
     }
+
+    public void SetManager(PlayerJointManager manager)
+    {
+        jointManager = manager;
+    }
 }

@@ -18,46 +18,51 @@ public class PlayerJointManager : MonoBehaviour
     /// </summary>
     public bool AttachArm(JointSlot2D targetSlot, JointSlot2D slotToAttachTo, JointType targetType)
     {
-        GameObject armObj = targetSlot.transform.parent.gameObject;
-        Rigidbody2D playerRb = GetComponent<Rigidbody2D>();
+        // 1. Get the TRUE root of the incoming part, regardless of how deep the slot is nested
+        Part incomingPart = targetSlot.GetComponentInParent<Part>();
+        GameObject armObj = incomingPart.gameObject;
 
-        // 1. Align position and rotation first
+        // Get the Rigidbody2D of the specific part we're attaching to
+        Rigidbody2D parentRb = slotToAttachTo.GetComponentInParent<Rigidbody2D>();
+
+        // 2. Align position and rotation (This now safely moves the whole part)
         Vector3 offset = armObj.transform.position - targetSlot.transform.position;
         armObj.transform.position = slotToAttachTo.transform.position + offset;
         armObj.transform.rotation = slotToAttachTo.transform.rotation;
 
-        // Get HingeJoint2D
-        HingeJoint2D hinge = armObj.GetComponentInParent<HingeJoint2D>();
-        if (hinge == null)
-        {
-            throw new System.Exception($"No hinge joint was found on {armObj.name}'s parent!");
-        }
+        // Grab the hinge directly from the Part object
+        HingeJoint2D hinge = incomingPart.GetComponent< HingeJoint2D>();
+        if (hinge == null) throw new System.Exception($"No hinge joint found on {armObj.name}!");
 
-        // 2. Disable joint temporarily to reset reference frame calculations
         hinge.enabled = false;
 
-        // 3. Configure connected body and anchors
-        hinge.connectedBody = playerRb;
+        // 3. Chain the hinge to the parent part's Rigidbody
+        hinge.connectedBody = parentRb;
         hinge.autoConfigureConnectedAnchor = false;
 
-        // Set local anchors relative to each object's transform space
+        // Set anchors relative to their respective local transform spaces
         hinge.anchor = armObj.transform.InverseTransformPoint(targetSlot.transform.position);
-        hinge.connectedAnchor = transform.InverseTransformPoint(slotToAttachTo.transform.position);
+        hinge.connectedAnchor = parentRb.transform.InverseTransformPoint(slotToAttachTo.transform.position);
 
-        // 4. Re-enable the joint so Unity computes reference limits from the current orientation
         hinge.enabled = true;
 
-        // Register attachment in Part component if present
-        Part part = armObj.GetComponentInParent<Part>();
-        if (part != null)
-        {
-            part.SetAttachmentConnection(targetSlot, slotToAttachTo);
-        }
+        // Register attachment
+        incomingPart.SetAttachmentConnection(targetSlot, slotToAttachTo);
 
         // Mark slots occupied
         slotToAttachTo.IsOccupied = true;
         targetSlot.IsOccupied = true;
         slotToAttachTo.gameObject.SetActive(false);
+
+        // 4. Inject the JointManager into the new part's unused slots
+        JointSlot2D[] newSlots = armObj.GetComponentsInChildren< JointSlot2D>();
+        foreach (var slot in newSlots)
+        {
+            if (!slot.IsOccupied)
+            {
+                slot.SetManager(this);
+            }
+        }
 
         return true;
     }

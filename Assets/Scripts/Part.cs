@@ -44,7 +44,6 @@ public class Part : MonoBehaviour, IDestructible
     [ContextMenu("Detach")]
     public void Detach()
     {
-        // Disable HingeJoint2D connecting this part to the player
         HingeJoint2D hinge = GetComponent<HingeJoint2D>();
         if (hinge != null)
         {
@@ -52,20 +51,20 @@ public class Part : MonoBehaviour, IDestructible
             hinge.enabled = false;
         }
 
-        // Unparent if it was parented to the player
         transform.SetParent(null);
 
-        // Keep the player body joint occupied so it cannot be reused
+        // Keep the original logic: the body slot remains occupied 
         if (connectedBodySlot != null)
         {
             connectedBodySlot.IsOccupied = true;
         }
 
-        // Allow any unused joints on this part to remain usable, 
-        // but free up the specific slot that was attached if needed
-        if (connectedPartSlot != null)
+        // NEW: Prevent THIS detached part from instantly being pulled again or pulling others
+        JointSlot2D[] mySlots = GetComponentsInChildren<JointSlot2D>();
+        foreach (var slot in mySlots)
         {
-            connectedPartSlot.IsOccupied = false;
+            slot.IsOccupied = true; // Makes it an invalid target for magnets
+            slot.SetManager(null);  // Stops it from running its own magnet logic
         }
 
         connectedPartSlot = null;

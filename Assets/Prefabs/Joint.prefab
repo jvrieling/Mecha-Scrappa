@@ -50,9 +50,9 @@ MonoBehaviour:
   jointType: 0
   isOccupied: 0
   isMagnetActive: 1
-  pullRadius: 1
-  pullSpeed: 0.5
-  attachThreshold: 0.1
+  pullRadius: 1.5
+  pullSpeed: 0.7
+  attachThreshold: 0.2
   particleBeam: {fileID: 5351022321943000807}
 --- !u!212 &7093056615791825145
 SpriteRenderer:
