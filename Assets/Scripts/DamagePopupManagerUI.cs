@@ -1,21 +1,33 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro; // TextMeshPro namespace
 
 public class DamagePopUpManagerUI : MonoBehaviour
 {
     [Header("UI Prefab Settings")]
-    [SerializeField] private GameObject healthTextPrefab; // Prefab containing a Text or TextMeshProUGUI component
+    [Tooltip("Prefab containing a TextMeshProUGUI component.")]
+    [SerializeField] private TMP_Text healthTextPrefab;
     [SerializeField] private float duration = 1.5f;
     [SerializeField] private Vector3 worldOffset = new Vector3(0f, 1f, 0f);
 
     private Camera mainCamera;
+    private Canvas parentCanvas;
     private RectTransform overlayRectTransform;
 
     private void Awake()
     {
         overlayRectTransform = GetComponent<RectTransform>();
-        mainCamera = Camera.main;
+        parentCanvas = GetComponentInParent<Canvas>();
+
+        // Ensure canvas setup matches expectation
+        if (parentCanvas != null && parentCanvas.worldCamera != null)
+        {
+            mainCamera = parentCanvas.worldCamera;
+        }
+        else
+        {
+            mainCamera = Camera.main;
+        }
     }
 
     private void OnEnable()
@@ -32,21 +44,18 @@ public class DamagePopUpManagerUI : MonoBehaviour
     {
         if (destructible == null || healthTextPrefab == null) return;
 
-        // Instantiate pop-up child element on this RectTransform
-        GameObject popUp = Instantiate(healthTextPrefab, transform);
-        Text textComponent = popUp.GetComponentInChildren<Text>();
+        Debug.Log("Showing health ui!!");
+
+        // Instantiate pop-up element as a child of this overlay RectTransform
+        TMP_Text popUpInstance = Instantiate(healthTextPrefab, transform);
 
         float healthPercentage = Mathf.Clamp01(destructible.CurrentHealth / destructible.MaxHealth) * 100f;
-
-        if (textComponent != null)
-        {
-            textComponent.text = $"{healthPercentage:F0}%";
-        }
+        popUpInstance.text = $"{healthPercentage:F0}%";
 
         MonoBehaviour targetMono = destructible as MonoBehaviour;
         Transform targetTransform = targetMono != null ? targetMono.transform : null;
 
-        StartCoroutine(AnimateAndDestroyPopUp(popUp, targetTransform));
+        StartCoroutine(AnimateAndDestroyPopUp(popUpInstance.gameObject, targetTransform));
     }
 
     private IEnumerator AnimateAndDestroyPopUp(GameObject popUp, Transform targetTransform)
@@ -60,9 +69,19 @@ public class DamagePopUpManagerUI : MonoBehaviour
 
             if (targetTransform != null)
             {
-                // Follow the target's world position on screen
-                Vector3 screenPos = mainCamera.WorldToScreenPoint(targetTransform.position + worldOffset);
-                popUpRect.position = screenPos;
+                // Calculate world position to screen coordinate
+                Vector3 worldPos = targetTransform.position + worldOffset;
+                Vector3 screenPoint = mainCamera.WorldToScreenPoint(worldPos);
+
+                // Convert screen position to canvas local position for Screen Space - Camera
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    overlayRectTransform,
+                    screenPoint,
+                    mainCamera,
+                    out Vector2 localPoint))
+                {
+                    popUpRect.anchoredPosition = localPoint;
+                }
             }
 
             yield return null;

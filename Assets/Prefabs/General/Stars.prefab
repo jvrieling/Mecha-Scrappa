@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6044573900668099270
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 658029814805600378}
+  - component: {fileID: 1522696255076167973}
+  m_Layer: 0
+  m_Name: Stars
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &658029814805600378
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6044573900668099270}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1522696255076167973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6044573900668099270}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9193fdc7768e4644855ea2efaa37706, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StarfieldParallax
+  targetCamera: {fileID: 0}
+  starSprites:
+  - {fileID: 8442483440489259830, guid: 6fce23c836dc35b4d9bfd0539a8ebe44, type: 3}
+  - {fileID: -6414411470175368871, guid: 7e7bd97a58034794e881fc765149d95b, type: 3}
+  - {fileID: 1670900114214611194, guid: 1d903a0ec55712e438e82a605c12907b, type: 3}
+  starCount: 300
+  despawnMargin: 4
+  respawnStars: 1
+  minParallax: 0.5
+  maxParallax: 0.95
+  nearScaleRange: {x: 0.6, y: 0.8}
+  farScaleRange: {x: 0.1, y: 0.3}
+  nearAlpha: 1
+  farAlpha: 0.35
+  randomRotation: 1
+  randomFlip: 1
+  sortingLayerName: Default
+  sortingOrder: -100

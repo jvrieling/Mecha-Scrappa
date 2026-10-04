@@ -4,62 +4,99 @@ using UnityEngine.UI;
 public class OffscreenEnemyTrackerUI : MonoBehaviour
 {
     [SerializeField] private RectTransform pointerUI;
+    [SerializeField] private Image pointerGraphic; // The graphic component to enable/disable
     [SerializeField] private float edgeMargin = 40f; // Padding from screen boundary
 
+    [Header("Center Exclusion Settings")]
+    [Tooltip("Fraction of the camera view considered 'center area' (0.2 = center 20%). Enemies inside this region hide the tracker.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float centerThreshold = 0.2f; // 20% by default
+
     private Camera mainCamera;
+    private Canvas parentCanvas;
+    private RectTransform canvasRect;
 
     private void Start()
     {
-        mainCamera = Camera.main;
-        if (pointerUI == null) pointerUI = GetComponent<RectTransform>();
+        parentCanvas = GetComponentInParent<Canvas>();
+
+        if (parentCanvas != null && parentCanvas.worldCamera != null)
+        {
+            mainCamera = parentCanvas.worldCamera;
+        }
+        else
+        {
+            mainCamera = Camera.main;
+        }
+
+        if (parentCanvas != null)
+        {
+            canvasRect = parentCanvas.GetComponent<RectTransform>();
+        }
+
+        if (pointerUI == null)
+        {
+            pointerUI = GetComponent<RectTransform>();
+        }
+
+        // Auto-get Image if not manually assigned
+        if (pointerGraphic == null)
+        {
+            pointerGraphic = pointerUI.GetComponent<Image>();
+        }
     }
 
     private void Update()
     {
         Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
 
-        bool anyOnScreen = false;
-        Enemy closestOffscreenEnemy = null;
+        bool anyInCenter = false;
+        Enemy closestOutsideEnemy = null;
         float minDistanceSq = float.MaxValue;
 
         Vector3 cameraPos = mainCamera.transform.position;
+
+        // Calculate normalized center boundaries in Viewport space (0 to 1)
+        float halfCenter = centerThreshold * 0.5f;
+        float minCenter = 0.5f - halfCenter;
+        float maxCenter = 0.5f + halfCenter;
 
         foreach (Enemy enemy in enemies)
         {
             Vector3 viewportPos = mainCamera.WorldToViewportPoint(enemy.transform.position);
 
-            // Enemy is on screen if viewport X and Y are within [0, 1] and in front of camera
-            bool isOnScreen = viewportPos.z > 0 && viewportPos.x >= 0 && viewportPos.x <= 1 && viewportPos.y >= 0 && viewportPos.y <= 1;
+            // Check if enemy is within the center region and in front of the camera
+            bool isInCenter = viewportPos.z > 0 &&
+                              viewportPos.x >= minCenter && viewportPos.x <= maxCenter &&
+                              viewportPos.y >= minCenter && viewportPos.y <= maxCenter;
 
-            if (isOnScreen)
+            if (isInCenter)
             {
-                anyOnScreen = true;
-                break; // Screen is active; hide indicator immediately
+                anyInCenter = true;
+                break; // An enemy is within the center 20%; hide indicator
             }
 
             float distSq = (enemy.transform.position - cameraPos).sqrMagnitude;
             if (distSq < minDistanceSq)
             {
                 minDistanceSq = distSq;
-                closestOffscreenEnemy = enemy;
+                closestOutsideEnemy = enemy;
             }
         }
 
-        // Hide pointer if an enemy is visible or no offscreen enemy exists
-        if (anyOnScreen || closestOffscreenEnemy == null)
+        // Hide pointer graphic if an enemy is in the center region or no outside enemy exists
+        if (anyInCenter || closestOutsideEnemy == null)
         {
-            if (pointerUI.gameObject.activeSelf)
-                pointerUI.gameObject.SetActive(false);
+            SetGraphicVisible(false);
             return;
         }
 
-        if (!pointerUI.gameObject.activeSelf)
-            pointerUI.gameObject.SetActive(true);
+        SetGraphicVisible(true);
 
-        // Clamp pointer along screen border
-        Vector3 screenPos = mainCamera.WorldToScreenPoint(closestOffscreenEnemy.transform.position);
+        // Calculate target screen position
+        Vector3 screenPos = mainCamera.WorldToScreenPoint(closestOutsideEnemy.transform.position);
 
-        // Reverse if target is behind the camera plane
+        // Reverse target ray if enemy is behind camera plane
         if (screenPos.z < 0)
         {
             screenPos *= -1f;
@@ -76,11 +113,28 @@ public class OffscreenEnemyTrackerUI : MonoBehaviour
             Mathf.Abs(maxY / (fromCenter.y != 0 ? fromCenter.y : 0.0001f))
         );
 
-        Vector2 clampedPos = screenCenter + fromCenter * scale;
-        pointerUI.position = clampedPos;
+        Vector2 clampedScreenPos = screenCenter + fromCenter * scale;
 
-        // Rotate the tracker icon toward the target
+        // Convert clamped screen position to canvas local space for Screen Space - Camera Canvas
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect,
+            clampedScreenPos,
+            mainCamera,
+            out Vector2 localPoint))
+        {
+            pointerUI.anchoredPosition = localPoint;
+        }
+
+        // Rotate the tracker icon toward the target direction
         float angle = Mathf.Atan2(fromCenter.y, fromCenter.x) * Mathf.Rad2Deg;
         pointerUI.rotation = Quaternion.Euler(0f, 0f, angle - 90f);
+    }
+
+    private void SetGraphicVisible(bool visible)
+    {
+        if (pointerGraphic != null && pointerGraphic.enabled != visible)
+        {
+            pointerGraphic.enabled = visible;
+        }
     }
 }
