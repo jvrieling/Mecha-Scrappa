@@ -1,23 +1,24 @@
-using DG.Tweening.Core.Easing;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, IDestructible
 {
     public static Player Instance;
 
     [Header("Movement Settings")]
-    [Tooltip("Strength of the impulse force applied on key press.")]
     [SerializeField] private float pushForce = 10f;
-    [Tooltip("Torque impulse force applied when pressing Left/Right arrow keys.")]
     [SerializeField] private float torqueForce = 5f;
 
     [Header("Boost Particles Settings")]
-    [Tooltip("Parent object containing leftBoost, rightBoost, upBoost, downBoost particle systems.")]
     [SerializeField] private Transform boostParticlesParent;
 
     [Header("Health & Death Settings")]
     public float maxHP = 100f;
     public float currentHP { get; private set; }
+
+    // IDestructible Interface Properties
+    public float CurrentHealth => currentHP;
+    public float MaxHealth => maxHP;
+
     public SpriteRenderer playerSprite;
     public ParticleSystem explosionParticles;
 
@@ -35,7 +36,6 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
-        // Tell GameManager to initialize the HP display
         if (GameManager.Instance != null)
         {
             GameManager.Instance.UpdateHPUI(currentHP, maxHP);
@@ -44,30 +44,26 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        if (isDead) return; // Prevent movement input if dead
+        if (isDead) return;
 
-        // Rotate Left (counter-clockwise)
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
             rb.AddTorque(torqueForce, ForceMode2D.Impulse);
             OrientBoostParticles(Vector2.left);
             leftBoost.Play();
         }
-        // Rotate Right (clockwise)
         else if (Input.GetKeyDown(KeyCode.RightArrow))
         {
             rb.AddTorque(-torqueForce, ForceMode2D.Impulse);
             OrientBoostParticles(Vector2.right);
             rightBoost.Play();
         }
-        // Push Forward (relative to player transform)
         else if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             ApplyPush(transform.up);
             OrientBoostParticles(Vector2.up);
             upBoost.Play();
         }
-        // Push Backward (relative to player transform)
         else if (Input.GetKeyDown(KeyCode.DownArrow))
         {
             ApplyPush(-transform.up);
@@ -93,9 +89,12 @@ public class Player : MonoBehaviour
         if (isDead) return;
 
         currentHP -= damageAmount;
-        currentHP = Mathf.Max(currentHP, 0f); // Clamp above 0
+        currentHP = Mathf.Max(currentHP, 0f);
 
-        GameManager.Instance.UpdateHPUI(currentHP, maxHP);
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.UpdateHPUI(currentHP, maxHP);
+        }
 
         if (currentHP <= 0f)
         {
@@ -106,6 +105,9 @@ public class Player : MonoBehaviour
     private void Die()
     {
         isDead = true;
-        GameManager.Instance.TriggerDeathScene(this);
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.TriggerDeathScene(this);
+        }
     }
 }

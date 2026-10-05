@@ -5,7 +5,7 @@ public class GunAttachment : MonoBehaviour
     [Header("Gun Settings")]
     [SerializeField] private GameObject bulletPrefab;
     [SerializeField] private Transform firePoint;
-    [SerializeField] private float fireRate = 1.5f; // Shots per second
+    [SerializeField] private float fireRate = 1.5f;
     [SerializeField] private float bulletSpeed = 15f;
     [SerializeField] private float bulletDamage = 10f;
 
@@ -16,15 +16,19 @@ public class GunAttachment : MonoBehaviour
     private float nextFireTime;
     private Transform targetTransform;
     private bool isEnemyWeapon = false;
+    private GameObject rootOwner;
 
     private void Update()
     {
-        // 1. DO NOT fire or aim if the part is floating loose in space
-        if (!IsAttachedToEntity())
+        rootOwner = GetRootOwner();
+
+        // 1. Do NOT fire or aim if floating loose in space
+        if (rootOwner == null)
         {
             return;
         }
 
+        IgnoreOwnerCollisions();
         DetectOwner();
         FindTarget();
         AimAtTarget();
@@ -40,23 +44,63 @@ public class GunAttachment : MonoBehaviour
         }
     }
 
-    private bool IsAttachedToEntity()
+    /// 
+    /// Traces both Transform hierarchy AND HingeJoint2D physics chains to find the true root entity.
+    /// 
+    private GameObject GetRootOwner()
     {
-        // Checks if this weapon is attached to either a Player or an Enemy
-        return GetComponentInParent<Player>() != null || GetComponentInParent<Enemy>() != null;
+        // Check Transform hierarchy first
+        Player p = GetComponentInParent<Player>();
+        if (p != null) return p.gameObject;
+
+        Enemy e = GetComponentInParent<Enemy>();
+        if (e != null) return e.gameObject;
+
+        // Check HingeJoint2D physics connections
+        HingeJoint2D hinge = GetComponent<HingeJoint2D>();
+        if (hinge != null && hinge.enabled && hinge.connectedBody != null)
+        {
+            Player connectedPlayer = hinge.connectedBody.GetComponentInParent<Player>();
+            if (connectedPlayer != null) return connectedPlayer.gameObject;
+
+            Enemy connectedEnemy = hinge.connectedBody.GetComponentInParent<Enemy>();
+            if (connectedEnemy != null) return connectedEnemy.gameObject;
+        }
+
+        return null;
+    }
+
+    private void IgnoreOwnerCollisions()
+    {
+        if (rootOwner == null) return;
+
+        Collider2D[] myColliders = GetComponentsInChildren<Collider2D>();
+        Collider2D[] ownerColliders = rootOwner.GetComponentsInChildren <Collider2D> ();
+
+        foreach (var myCol in myColliders)
+        {
+            foreach (var ownerCol in ownerColliders)
+            {
+                if (myCol != null && ownerCol != null)
+                {
+                    Physics2D.IgnoreCollision(myCol, ownerCol, true);
+                }
+            }
+        }
     }
 
     private void DetectOwner()
     {
-        Enemy enemy = GetComponentInParent<Enemy>();
-        isEnemyWeapon = (enemy != null);
+        if (rootOwner != null)
+        {
+            isEnemyWeapon = rootOwner.GetComponent<Enemy>() != null || rootOwner.GetComponentInParent<Player>() != null;
+        }
     }
 
     private void FindTarget()
     {
         if (isEnemyWeapon)
         {
-            // Enemy weapons target the player
             if (Player.Instance != null)
             {
                 targetTransform = Player.Instance.transform;
@@ -64,7 +108,6 @@ public class GunAttachment : MonoBehaviour
         }
         else
         {
-            // Player weapons target the nearest enemy
             Enemy[] enemies = FindObjectsByType<Enemy>();
             float closestDist = maxTargetDistance;
             Transform closestEnemy = null;
@@ -108,9 +151,9 @@ public class GunAttachment : MonoBehaviour
         Projectile2D projectile = bullet.GetComponent<Projectile2D>();
         if (projectile != null)
         {
-            // -transform.right shoots along the left-facing direction of the sprite
             Vector2 fireDirection = firePoint != null ? -firePoint.right : -transform.right;
-            projectile.Initialize(fireDirection * bulletSpeed, bulletDamage, gameObject);
+            // Pass rootOwner as the shooter so bullets ignore the entire ship
+            projectile.Initialize(fireDirection * bulletSpeed, bulletDamage, rootOwner);
         }
     }
 }
