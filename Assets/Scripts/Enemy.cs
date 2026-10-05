@@ -60,8 +60,50 @@ public class Enemy : MonoBehaviour, IDestructible
             playerTransform = player.transform;
         }
 
+        // Auto-bind any child parts configured on this enemy prefab
+        InitializeChildParts();
+
         PickNewTarget();
         ScheduleNextJunkSpawn();
+    }
+
+    /// 
+    /// Finds all Part components attached as children in the prefab editor and grounds their joints to the Enemy.
+    /// 
+    private void InitializeChildParts()
+    {
+        Part[] childParts = GetComponentsInChildren<Part>();
+        Rigidbody2D enemyRb = GetComponent<Rigidbody2D>();
+
+        foreach (Part part in childParts)
+        {
+            // Skip if it's the main enemy body itself
+            if (part.gameObject == gameObject) continue;
+
+            // Ensure proper layer assignment so parts don't collide with other enemy parts
+            part.gameObject.layer = gameObject.layer;
+
+            // Link HingeJoint2D to the enemy Rigidbody
+            HingeJoint2D hinge = part.GetComponent<HingeJoint2D>();
+            if (hinge != null)
+            {
+                hinge.connectedBody = enemyRb;
+                hinge.autoConfigureConnectedAnchor = false;
+
+                // Set anchors based on current transform positions set in the editor
+                hinge.anchor = Vector2.zero;
+                hinge.connectedAnchor = enemyRb.transform.InverseTransformPoint(part.transform.position);
+                hinge.enabled = true;
+            }
+
+            // Mark all slots on this child part as occupied so loose parts don't pull into them
+            JointSlot2D[] slots = part.GetComponentsInChildren<JointSlot2D>();
+            foreach (var slot in slots)
+            {
+                slot.IsOccupied = true;
+                slot.SetManager(null);
+            }
+        }
     }
 
     private void Update()

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,21 +10,18 @@ public class Part : MonoBehaviour, IDestructible
     [SerializeField] private float currentHealth;
 
     [Header("Joint Connections")]
-    public List<JointSlot2D> joints = new List<JointSlot2D>();
+    public List joints = new List();
 
-    // Stores references to the slots involved in attaching this part to the player
     private JointSlot2D connectedPartSlot;
     private JointSlot2D connectedBodySlot;
+    private bool isDetached = false;
 
     public float CurrentHealth => currentHealth;
     public float MaxHealth => maxHealth;
 
     private void OnValidate()
     {
-        if (maxHealth < 0f)
-        {
-            maxHealth = 0f;
-        }
+        if (maxHealth < 0f) maxHealth = 0f;
     }
 
     private void Awake()
@@ -31,19 +29,20 @@ public class Part : MonoBehaviour, IDestructible
         currentHealth = maxHealth;
     }
 
-    /// <summary>
-    /// Registers the joint slots used when attaching to the player.
-    /// Call this from PlayerJointManager.AttachArm when a part is attached.
-    /// </summary>
     public void SetAttachmentConnection(JointSlot2D partSlot, JointSlot2D bodySlot)
     {
         connectedPartSlot = partSlot;
         connectedBodySlot = bodySlot;
+        isDetached = false;
     }
 
     [ContextMenu("Detach")]
     public void Detach()
     {
+        if (isDetached) return;
+        isDetached = true;
+
+        // Disable HingeJoint2D connecting this part
         HingeJoint2D hinge = GetComponent<HingeJoint2D>();
         if (hinge != null)
         {
@@ -53,33 +52,35 @@ public class Part : MonoBehaviour, IDestructible
 
         transform.SetParent(null);
 
-        // Keep the original logic: the body slot remains occupied 
+        // Clear slot occupation references
         if (connectedBodySlot != null)
         {
-            connectedBodySlot.IsOccupied = true;
+            connectedBodySlot.IsOccupied = false;
         }
 
-        // NEW: Prevent THIS detached part from instantly being pulled again or pulling others
         JointSlot2D[] mySlots = GetComponentsInChildren<JointSlot2D>();
         foreach (var slot in mySlots)
         {
-            slot.IsOccupied = true; // Makes it an invalid target for magnets
-            slot.SetManager(null);  // Stops it from running its own magnet logic
+            slot.IsOccupied = false;
+            slot.SetManager(null);
         }
 
         connectedPartSlot = null;
         connectedBodySlot = null;
-    }
 
-    private void OnDestroy()
-    {
-        // Safe check to detach and keep parent body slot occupied upon destruction
-        Detach();
+        // Apply a slight impulse force so the detached part pops off
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            Vector2 randomPop = UnityEngine.Random.insideUnitCircle.normalized * 2f;
+            rb.AddForce(randomPop, ForceMode2D.Impulse);
+            rb.AddTorque(UnityEngine.Random.Range(-5f, 5f), ForceMode2D.Impulse);
+        }
     }
 
     public void TakeDamage(float damageAmount)
     {
-        if (damageAmount <= 0f) return;
+        if (damageAmount <= 0f || isDetached) return;
 
         currentHealth -= damageAmount;
         Debug.Log($"Part '{gameObject.name}' took {damageAmount} damage. Health remaining: {currentHealth}", gameObject);
@@ -94,8 +95,8 @@ public class Part : MonoBehaviour, IDestructible
 
     private void Die()
     {
-        Debug.Log($"Part '{gameObject.name}' destroyed!", gameObject);
+        Debug.Log($"Part '{gameObject.name}' destroyed! Detaching...", gameObject);
         CameraFollow.Shake(0.25f, 0.6f);
-        Destroy(gameObject);
+        Detach(); // Detaches rather than calling Destroy
     }
 }

@@ -1,3 +1,4 @@
+using DG.Tweening.Core.Easing;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -14,17 +15,37 @@ public class Player : MonoBehaviour
     [Tooltip("Parent object containing leftBoost, rightBoost, upBoost, downBoost particle systems.")]
     [SerializeField] private Transform boostParticlesParent;
 
-    public Rigidbody2D rb;
+    [Header("Health & Death Settings")]
+    public float maxHP = 100f;
+    public float currentHP { get; private set; }
+    public SpriteRenderer playerSprite;
+    public ParticleSystem explosionParticles;
 
+    [HideInInspector] public Rigidbody2D rb;
     public ParticleSystem leftBoost, rightBoost, upBoost, downBoost;
+
+    private bool isDead = false;
 
     private void Awake()
     {
         Instance = this;
+        rb = GetComponent<Rigidbody2D>();
+        currentHP = maxHP;
+    }
+
+    private void Start()
+    {
+        // Tell GameManager to initialize the HP display
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.UpdateHPUI(currentHP, maxHP);
+        }
     }
 
     private void Update()
     {
+        if (isDead) return; // Prevent movement input if dead
+
         // Rotate Left (counter-clockwise)
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
@@ -57,18 +78,34 @@ public class Player : MonoBehaviour
 
     private void ApplyPush(Vector2 direction)
     {
-        // Apply immediate force impulse taking mass into account
         rb.AddForce(direction * pushForce, ForceMode2D.Impulse);
     }
 
-    /// <summary>
-    /// Rotates the parent object of the boost particles to face the intended direction.
-    /// </summary>
     private void OrientBoostParticles(Vector2 direction)
     {
         if (boostParticlesParent == null) return;
-
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
         boostParticlesParent.localRotation = Quaternion.Euler(0f, 0f, angle);
+    }
+
+    public void TakeDamage(float damageAmount)
+    {
+        if (isDead) return;
+
+        currentHP -= damageAmount;
+        currentHP = Mathf.Max(currentHP, 0f); // Clamp above 0
+
+        GameManager.Instance.UpdateHPUI(currentHP, maxHP);
+
+        if (currentHP <= 0f)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        isDead = true;
+        GameManager.Instance.TriggerDeathScene(this);
     }
 }
