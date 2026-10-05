@@ -95,7 +95,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   lifetime: 4
-  hitEffectPrefab: {fileID: 0}
+  hitEffectPrefab: {fileID: 1416047948732773219, guid: 0a2c4b049e1d0af45ac99b80700c1e15, type: 3}
 --- !u!50 &6553970938884647443
 Rigidbody2D:
   serializedVersion: 5

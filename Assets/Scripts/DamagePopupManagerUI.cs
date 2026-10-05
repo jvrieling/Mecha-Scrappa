@@ -44,8 +44,6 @@ public class DamagePopUpManagerUI : MonoBehaviour
     {
         if (destructible == null || healthTextPrefab == null) return;
 
-        Debug.Log("Showing health ui!!");
-
         // Instantiate pop-up element as a child of this overlay RectTransform
         TMP_Text popUpInstance = Instantiate(healthTextPrefab, transform);
 

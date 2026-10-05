@@ -190,11 +190,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff7775ecc237f8f49977bffdd1e74d60, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
-  maxHealth: 50
+  maxHealth: 25
   currentHealth: 0
-  joints:
-  - {fileID: 1320621610880130059}
-  - {fileID: 3000899398365153767}
 --- !u!114 &5875851588748759788
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -477,17 +474,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c3a81849d9a98f1488d025ef3e3a34c6, type: 3}
---- !u!114 &3000899398365153767 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3842413799420486228, guid: c3a81849d9a98f1488d025ef3e3a34c6, type: 3}
-  m_PrefabInstance: {fileID: 2087322651339615155}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fe102a0d983e2548b4abb82af56845b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::JointSlot2D
 --- !u!4 &9028415844010412298 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7042724387870909113, guid: c3a81849d9a98f1488d025ef3e3a34c6, type: 3}
@@ -554,17 +540,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c3a81849d9a98f1488d025ef3e3a34c6, type: 3}
---- !u!114 &1320621610880130059 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3842413799420486228, guid: c3a81849d9a98f1488d025ef3e3a34c6, type: 3}
-  m_PrefabInstance: {fileID: 2810585528778538591}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fe102a0d983e2548b4abb82af56845b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::JointSlot2D
 --- !u!4 &5097507576140274918 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7042724387870909113, guid: c3a81849d9a98f1488d025ef3e3a34c6, type: 3}

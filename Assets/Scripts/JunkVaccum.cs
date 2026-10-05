@@ -74,6 +74,8 @@ public class JunkVacuum : MonoBehaviour
         // Increment tracked score
         JunkCount++;
 
+        GameManager.Instance.AddScrap(1);
+
         // Instantiate collection particle effect
         if (collectParticlePrefab != null)
         {

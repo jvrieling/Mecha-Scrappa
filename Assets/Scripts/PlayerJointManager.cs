@@ -52,7 +52,7 @@ public class PlayerJointManager : MonoBehaviour
         // Mark slots occupied
         slotToAttachTo.IsOccupied = true;
         targetSlot.IsOccupied = true;
-        slotToAttachTo.gameObject.SetActive(false);
+        targetSlot.gameObject.SetActive(false);
 
         // 4. Inject the JointManager into the new part's unused slots
         JointSlot2D[] newSlots = armObj.GetComponentsInChildren< JointSlot2D>();

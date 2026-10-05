@@ -91,6 +91,8 @@ public class Player : MonoBehaviour, IDestructible
         currentHP -= damageAmount;
         currentHP = Mathf.Max(currentHP, 0f);
 
+        Debug.Log("Player took " + damageAmount + " damage!");
+
         if (GameManager.Instance != null)
         {
             GameManager.Instance.UpdateHPUI(currentHP, maxHP);
